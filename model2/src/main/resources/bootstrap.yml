@@ -1,0 +1,27 @@
+spring:
+  cloud:
+    config:
+      username: hy
+      password: hyyy
+      discovery:
+        enabled: true
+        failFast: false
+        serviceId: config-server
+    stream:
+      default:
+        binder: rabbit-lemon
+        #content-type : application/json
+      defaultBinder: rabbit
+      binders:
+        rabbit-lemon:
+          environment:
+            spring:
+              rabbitmq:
+                addresses:
+                password:
+        rabbit:
+          environment:
+            spring:
+              rabbitmq:
+                addresses:
+                password:

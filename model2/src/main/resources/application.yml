@@ -1,0 +1,6 @@
+server:
+  port: 7011
+  tomcat:
+    accept-count: 10
+    max-connections: 5000
+    max-threads: 500

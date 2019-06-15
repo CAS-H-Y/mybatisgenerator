@@ -8,6 +8,7 @@ import org.mybatis.generator.api.dom.xml.Document;
 import org.mybatis.generator.api.dom.xml.TextElement;
 import org.mybatis.generator.api.dom.xml.XmlElement;
 import org.mybatis.generator.codegen.mybatis3.MyBatis3FormattingUtilities;
+import org.mybatis.generator.config.Context;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class PaginationPlugin extends PluginAdapter {
         interfaze.getMethods().clear();
         return true;
     }
+
 
     /**
      * * 生成实体中每个属性
@@ -68,49 +70,170 @@ public class PaginationPlugin extends PluginAdapter {
     @Override
     public boolean sqlMapDocumentGenerated(Document document, IntrospectedTable introspectedTable) {
         String tableName = introspectedTable.getAliasedFullyQualifiedTableNameAtRuntime();
-        //数据库表名
         List<IntrospectedColumn> columns = introspectedTable.getAllColumns();
         XmlElement parentElement = document.getRootElement();
-       // 添加sql——where
         XmlElement sql = new XmlElement("sql");
-        sql.addAttribute(new Attribute("id", "sql_where"));
-        XmlElement where = new XmlElement("where");
+        sql.addAttribute(new Attribute("id", "Base_Column_List"));
+        StringBuilder sb=new StringBuilder();
+        for(int i=0;i<columns.size();i++){
+            if(i!=0){
+                sb.append(",");
+            }
+            sb.append(columns.get(i).getActualColumnName());
+        }
+        sql.addElement(new TextElement(sb.toString()));
+        //sql.addElement(getColum(columns));
+        XmlElement get = new XmlElement("select");
+        get.addAttribute(new Attribute("id", "get"));
+        get.addAttribute(new Attribute("resultMap", "BaseResultMap"));
+        get.addAttribute(new Attribute("parameterType", "String"));
+        String selectsql="select ";
+        get.addElement(new TextElement(selectsql));
+        XmlElement include = new XmlElement("include");
+        include.addAttribute(new Attribute("refid", "Base_Column_List"));
+        get.addElement(include);
+        List<IntrospectedColumn> list= introspectedTable.getPrimaryKeyColumns();
+
+        get.addElement(new TextElement(getPrimaryKeyColumns(list)));
+        parentElement.addElement(sql);
+        parentElement.addElement(get);
+        return super.sqlMapDocumentGenerated(document, introspectedTable);
+
+    }
+    private String getPrimaryKeyColumns(List<IntrospectedColumn> list){
+        StringBuilder sb=new StringBuilder();
+        sb.append(" where ");
+        for(int i=0;i<list.size();i++){
+            if(i!=0){
+                sb.append(" and ");
+            }
+            String cloumName=list.get(i).getActualColumnName();
+            String cloumType=list.get(i).getJdbcTypeName();
+            sb.append(cloumName+"={"+cloumName+",jdbcType="+cloumType+"}");
+        }
+        return sb.toString();
+    }
+    private String getColum(List<IntrospectedColumn> columns){
         StringBuilder sb = new StringBuilder();
-        for (IntrospectedColumn introspectedColumn : introspectedTable.getNonPrimaryKeyColumns()) {
+        XmlElement where = new XmlElement("where");
+        for (IntrospectedColumn column : columns) {
             XmlElement isNotNullElement = new XmlElement("if");
-            //$NON - NLS - 1 $
             sb.setLength(0);
-            sb.append(introspectedColumn.getJavaProperty());
-            sb.append(" != null");
-            //$NON - NLS - 1
-            isNotNullElement.addAttribute(new Attribute("test", sb.toString()));
-           // $NON - NLS - 1 $
+            sb.append(column.getJavaProperty());
+            sb.append(" != null"); //$NON-NLS-1$
+            isNotNullElement.addAttribute(new Attribute("test", sb.toString())); //$NON-NLS-1$
             where.addElement(isNotNullElement);
             sb.setLength(0);
             sb.append(" and ");
-            sb.append(MyBatis3FormattingUtilities.getEscapedColumnName(introspectedColumn));
-            sb.append(" = ");
-            //$NON - NLS - 1 $
-            sb.append(MyBatis3FormattingUtilities.getParameterClause(introspectedColumn));
+            sb.append(MyBatis3FormattingUtilities.getEscapedColumnName(column));
+            sb.append(" = "); //$NON-NLS-1$
+
+            sb.append(MyBatis3FormattingUtilities.getParameterClause(column));
             isNotNullElement.addElement(new TextElement(sb.toString()));
         }
-        sql.addElement(where);
-        parentElement.addElement(sql);
-        //添加getList
-        XmlElement select = new XmlElement("select");
-        select.addAttribute(new Attribute("id", "getList"));
-        select.addAttribute(new Attribute("resultMap", "BaseResultMap"));
-        select.addAttribute(new Attribute("parameterType", introspectedTable.getBaseRecordType()));
-        select.addElement(new TextElement(" select * from " + introspectedTable.getFullyQualifiedTableNameAtRuntime()));
-        XmlElement include = new XmlElement("include");
-        include.addAttribute(new Attribute("refid", "sql_where"));
-        select.addElement(include);
-        parentElement.addElement(select);
-        return super.sqlMapDocumentGenerated(document, introspectedTable);
+        return sb.toString();
+    }
+    @Override
+    public boolean sqlMapUpdateByExampleWithBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    public PaginationPlugin() {
+        super();
     }
 
     @Override
-    public boolean sqlMapUpdateByPrimaryKeyWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+    public boolean sqlMapResultMapWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return super.sqlMapResultMapWithoutBLOBsElementGenerated(element,introspectedTable);
+    }
+
+    @Override
+    public boolean sqlMapCountByExampleElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapDeleteByExampleElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapDeleteByPrimaryKeyElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapExampleWhereClauseElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapResultMapWithBLOBsElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapSelectByExampleWithBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByExampleSelectiveElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByExampleWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByPrimaryKeySelectiveElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByPrimaryKeyWithBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapInsertSelectiveElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByPrimaryKeyWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapSelectByPrimaryKeyElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+//        String tableName = introspectedTable.getAliasedFullyQualifiedTableNameAtRuntime();
+//        //数据库表名
+//        List<IntrospectedColumn> columns = introspectedTable.getAllColumns();
+//        element.addAttribute(new Attribute("id", "find"));
+//        element.getAttributes();
+//        element.addAttribute(new Attribute("resultMap", "BaseResultMap"));
+//        element.addAttribute(new Attribute("parameterType", introspectedTable.getBaseRecordType()));
+//        element.addElement(new TextElement(" select"));
+//        XmlElement include = new XmlElement("include");
+//        include.addAttribute(new Attribute("refid", "Base_Column_List"));
+//        element.addElement(include);
+//
+//        element.addElement(new TextElement("* from"  + introspectedTable.getFullyQualifiedTableNameAtRuntime()));
+//        String text="where "+introspectedTable.getGeneratedKey();
+//        TextElement where = new TextElement(text);
+//        element.addElement(where);
+//        return super.sqlMapSelectByPrimaryKeyElementGenerated(element, introspectedTable);
         return false;
     }
 
@@ -120,10 +243,30 @@ public class PaginationPlugin extends PluginAdapter {
     }
 
     @Override
-    public boolean sqlMapSelectByExampleWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
-//        LIMIT5, 10;
-//        检索记录行 6 - 15
-        return super.sqlMapSelectByExampleWithoutBLOBsElementGenerated(element, introspectedTable);
+    public Context getContext() {
+        return super.getContext();
+    }
+
+    @Override
+    public boolean sqlMapBaseColumnListElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapBlobColumnListElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapSelectAllElementGenerated(XmlElement element, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean sqlMapSelectByExampleWithoutBLOBsElementGenerated(XmlElement element, IntrospectedTable
+            introspectedTable) {
+
+        return false;
     }
 
     /**
@@ -132,7 +275,7 @@ public class PaginationPlugin extends PluginAdapter {
     public boolean sqlMapDocumentGenerated2(Document document, IntrospectedTable introspectedTable) {
         String tableName = introspectedTable.getAliasedFullyQualifiedTableNameAtRuntime();
         //数据库表名
-        List<IntrospectedColumn > columns = introspectedTable.getAllColumns();
+        List<IntrospectedColumn> columns = introspectedTable.getAllColumns();
         //添加sql
         XmlElement sql = new XmlElement("select");
         XmlElement parentElement = document.getRootElement();
@@ -163,7 +306,8 @@ public class PaginationPlugin extends PluginAdapter {
         field.setInitializationString("1L");
         commentGenerator.addFieldComment(field, introspectedTable);
         topLevelClass.addField(field);
-    }    /*	 * Dao中添加方法	 */
+    }
+    /*	 * Dao中添加方法	 */
 
     private Method generateDeleteLogicByIds(Method method, IntrospectedTable introspectedTable) {
         Method m = new Method("deleteLogicByIds");

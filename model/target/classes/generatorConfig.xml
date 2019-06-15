@@ -41,7 +41,7 @@
         </javaModelGenerator>
 
         <sqlMapGenerator targetPackage="com.heyang.mapper"
-                         targetProject="E:\GitProject\mybatisgeneator\model\src\main\resource">
+                         targetProject="E:\GitProject\mybatisgeneator\model\src\main\resources">
             <property name="enableSubPackages" value="false"/>
         </sqlMapGenerator>
 
@@ -49,7 +49,7 @@
                              targetProject="E:\GitProject\mybatisgeneator\model\src\main\java">
             <property name="enableSubPackages" value="false"/>
         </javaClientGenerator>
-        <table tableName="ums_%">
+        <table tableName="ums_admin">
             <generatedKey column="id" sqlStatement="MySql" identity="true"/>
         </table>
     </context>
